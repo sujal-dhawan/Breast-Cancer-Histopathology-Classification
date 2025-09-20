@@ -11,7 +11,8 @@ This project provides a deep learning pipeline for classifying breast cancer his
 - [cite_start]**Model Interpretability:** Integrates **Grad-CAM** visualizations to produce heatmaps that explain the model's predictions, a crucial step for building trust in clinical AI tools[cite: 21, 22].
 
 ## Results
-The model was trained successfully, showing a stable and consistent improvement in accuracy and decrease in loss. The final evaluation on the test set confirms the model's excellent performance, making only 4 mistakes on 600 unseen images.
+
+The model trained successfully, showing a stable increase in validation accuracy and decrease in loss. The final evaluation on the test set confirms the model's excellent performance.
 
 | Training History | Confusion Matrix |
 | :---: | :---: |
