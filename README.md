@@ -11,12 +11,33 @@ This project provides a deep learning pipeline for classifying breast cancer his
 - [cite_start]**Model Interpretability:** Integrates **Grad-CAM** visualizations to produce heatmaps that explain the model's predictions, a crucial step for building trust in clinical AI tools[cite: 21, 22].
 
 ## Results
+The model was trained successfully on a balanced dataset and achieved an excellent final accuracy of **99.33%** on the unseen test set.
 
-The model trained successfully, showing a stable increase in validation accuracy and decrease in loss. The final evaluation on the test set confirms the model's excellent performance.
+### Quantitative Results
+The classification report provides a detailed breakdown of the model's high performance across both classes, and the confusion matrix shows only 4 errors were made on 600 test images.
 
-| Training History | Confusion Matrix |
+| Classification Report | Confusion Matrix |
 | :---: | :---: |
-| ![Training History](outputs/plots/training_history.png) | ![Confusion Matrix](outputs/plots/confusion_matrix.png) |
+| ![Classification Report](outputs/plots/classification_report.png) | ![Confusion Matrix](outputs/plots/confusion_matrix.png) |
+
+### Performance Visualizations
+The training history shows a stable and consistent learning curve, with validation accuracy steadily increasing and loss decreasing over 12 epochs.
+
+![Training History](outputs/plots/training_history.png)
+
+### Prediction Examples
+Below is a sample of the model's correct predictions on the test set, followed by a visualization of all four images it classified incorrectly.
+
+| Sample of Correct Predictions | All Incorrect Predictions |
+| :---: | :---: |
+| ![Sample Predictions](outputs/plots/sample_predictions.png) | ![Wrong Predictions](outputs/plots/wrong_predictions.png) |
+
+### Data Preparation Overview
+The initial dataset was imbalanced. A robust data pipeline was engineered to create a perfectly balanced training set through upsampling.
+
+| Original Imbalanced Dataset | Final Balanced Training Set |
+| :---: | :---: |
+| ![Dataset Distribution](outputs/plots/dataset_distribution.png) | ![Balanced Training Set](outputs/plots/balanced_training_set.png) |
 
 ### Grad-CAM Visualization
 The Grad-CAM heatmaps highlight the regions the model focused on. For the correctly classified malignant image, the model correctly focuses on the dense, abnormal cell nuclei, ignoring the surrounding tissue.
