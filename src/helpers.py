@@ -1,10 +1,20 @@
 # src/helpers.py
 
 import tensorflow as tf
+from tensorflow.keras import layers
 import matplotlib.pyplot as plt
 import albumentations as A
 import numpy as np
-from tensorflow.keras.applications.resnet50 import preprocess_input
+from tensorflow.keras.applications import resnet50, efficientnet
+
+# ✅ ADDED: The Squeeze-and-Excite block for the attention mechanism
+def SqueezeExciteBlock(inputs, ratio=8):
+    b, h, w, c = inputs.shape
+    x = layers.GlobalAveragePooling2D()(inputs)
+    x = layers.Dense(c // ratio, activation='relu', kernel_initializer='he_normal', use_bias=False)(x)
+    x = layers.Dense(c, activation='sigmoid', kernel_initializer='he_normal', use_bias=False)(x)
+    x = layers.multiply([inputs, x])
+    return x
 
 # --- Image Parsing and Preprocessing ---
 def parse_image(path, label):
@@ -17,15 +27,18 @@ def resize_image(image, label, image_size=224):
     img = tf.image.resize(img, [image_size, image_size])
     return img, label
 
-def preprocess_data(image, label):
-    image = preprocess_input(image)
-    return image, label
+# A single function to handle preprocessing for different models
+def preprocess_data(image, label, model_name):
+    if model_name.lower().startswith('efficientnet'):
+        return efficientnet.preprocess_input(image), label
+    else: # Default to ResNet50
+        return resnet50.preprocess_input(image), label
 
-def decode_test(path, image_size=224):
+def decode_test(path, image_size=224, model_name="resnet50"):
     img = tf.io.read_file(path)
     img = tf.image.decode_png(img, channels=3)
     img, _ = resize_image(img, None, image_size)
-    img = preprocess_input(img)
+    img, _ = preprocess_data(img, None, model_name)
     return img
 
 # --- Augmentation ---
@@ -49,9 +62,7 @@ def augmentor(image, label, image_size=224):
     return aug_img, label
 
 # --- Visualization ---
-
 def _rescale_for_display(image):
-    """Rescales a preprocessed image from any range to the [0, 1] range for plotting."""
     return (image - np.min(image)) / (np.max(image) - np.min(image))
 
 def view_image(ds, class_names, col=8, row=2, size=(25, 7)):
@@ -85,6 +96,7 @@ def training_history(history):
     ax2.set_title('Training and Validation Loss')
     plt.show()
 
+# ✅ KEPT the visualization functions for evaluation
 def view_prediction(test_img=None, pred_label=None, max_show=30):
     if test_img is None or pred_label is None:
         print("⚠️ view_prediction called without inputs")
@@ -99,7 +111,7 @@ def view_prediction(test_img=None, pred_label=None, max_show=30):
     plt.tight_layout()
     plt.show()
 
-def view_wrong_prediction(df, image_size=224):
+def view_wrong_prediction(df, image_size=224, model_name="resnet50"):
     if df.empty:
         print("🎉 No wrong predictions to display")
         return
@@ -109,7 +121,7 @@ def view_wrong_prediction(df, image_size=224):
     plt.figure(figsize=(cols * 3, rows * 4))
 
     for i in range(num_images):
-        img = decode_test(df.path.iloc[i], image_size)
+        img = decode_test(df.path.iloc[i], image_size, model_name)
         ax = plt.subplot(rows, cols, i + 1)
         ax.imshow(_rescale_for_display(img.numpy()))
         ax.set_title(f"Pred: {df.prediction.iloc[i]}\nActual: {df.actual.iloc[i]}", fontsize=10)

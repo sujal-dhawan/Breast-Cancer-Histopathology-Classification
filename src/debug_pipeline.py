@@ -6,19 +6,23 @@ import matplotlib.pyplot as plt
 
 # Import the exact same components as your train.py script
 from dataset import train_df, AUTOTUNE, class_names
-from helpers import parse_image, augmentor, preprocess_data
+from helpers import parse_image, augmentor, preprocess_data, resize_image
+
+# --- ✅ CHOOSE WHICH MODEL'S PIPELINE TO DEBUG ---
+MODEL_NAME = "ResNet50"  # Options: "ResNet50", "EfficientNetB0"
 
 # Re-create the training pipeline exactly as it is in train.py
-print("--- Building the data pipeline... ---")
+print(f"--- Building the data pipeline for {MODEL_NAME}... ---")
 train_loader = tf.data.Dataset.from_tensor_slices((train_df.path, train_df.label_int))
 image_size = 224
-batch_size = 32 # Use a smaller batch for easier inspection
+batch_size = 16 # Use a smaller batch for easier inspection
 
 train_ds = (
-    train_loader.shuffle(len(train_df))
+    train_loader.shuffle(1000) # Shuffle a smaller buffer for speed
     .map(parse_image, num_parallel_calls=AUTOTUNE)
     .map(lambda image, label: augmentor(image, label, image_size=image_size), num_parallel_calls=AUTOTUNE)
-    .map(preprocess_data, num_parallel_calls=AUTOTUNE) # This is the critical step we are testing
+    # ✅ UPDATE: Pass the model_name to the preprocessing function
+    .map(lambda image, label: preprocess_data(image, label, MODEL_NAME), num_parallel_calls=AUTOTUNE)
     .batch(batch_size)
     .prefetch(AUTOTUNE)
 )
@@ -41,19 +45,16 @@ print("---------------------------\n")
 
 
 # --- Visualize the Batch ---
-# Because the data is preprocessed, it won't look like a normal image.
-# We need to rescale it back to a [0, 1] range just for visualization.
 def rescale_for_plotting(image):
     # This is a simple min-max normalization for viewing purposes
     return (image - tf.reduce_min(image)) / (tf.reduce_max(image) - tf.reduce_min(image))
 
-plt.figure(figsize=(15, 8))
-plt.suptitle("Images As Seen by the Model (After Preprocessing)")
+plt.figure(figsize=(15, 15))
+plt.suptitle(f"Images As Seen by {MODEL_NAME} (After Preprocessing)")
 for i in range(min(16, batch_size)): # Show up to 16 images
     ax = plt.subplot(4, 4, i + 1)
-    # Apply the rescaling so we can see the image
     plt.imshow(rescale_for_plotting(image_batch[i]))
-    plt.title(class_names[label_batch[i]])
+    plt.title(class_names[label_batch[i]], fontsize=8)
     plt.axis("off")
-plt.tight_layout()
+plt.tight_layout(rect=[0, 0, 1, 0.97])
 plt.show()

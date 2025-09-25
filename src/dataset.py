@@ -1,19 +1,21 @@
 # src/dataset.py
 
 import os
+import re
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import seaborn as sns
 import glob
+from sklearn.model_selection import train_test_split
 
 # Use AUTOTUNE for dataset pipelines
 AUTOTUNE = tf.data.AUTOTUNE
 
 # --- Paths ---
 DATA_DIR = "data"
-IMG_DIR = os.path.join(DATA_DIR, "BreaKHis_v1")  # Remove extra folder duplication
+IMG_DIR = os.path.join(DATA_DIR, "BreaKHis_v1")
 
 # --- Auto-detect folds file ---
 fold_files = glob.glob(os.path.join(DATA_DIR, "Folds.*")) + \
@@ -35,66 +37,59 @@ elif fold_file.endswith(".xlsx"):
 else:
     raise ValueError(f"❌ Unsupported folds file format: {fold_file}")
 
-class_names = ['benign', 'malignant']
+
+# ✅ UPDATE class_names to the 8 subtypes from the reference document
+class_names = [
+    'adenosis', 'fibroadenoma', 'phyllodes_tumor', 'tubular_adenoma',
+    'ductal_carcinoma', 'lobular_carcinoma', 'mucinous_carcinoma', 'papillary_carcinoma'
+]
+# Map filename abbreviations to full class names
+label_map = {
+    'A': 'adenosis', 'F': 'fibroadenoma', 'PT': 'phyllodes_tumor', 'TA': 'tubular_adenoma',
+    'DC': 'ductal_carcinoma', 'LC': 'lobular_carcinoma', 'MC': 'mucinous_carcinoma', 'PC': 'papillary_carcinoma'
+}
 
 # --- Process Dataset ---
 data = data.rename(columns={'filename': 'path'})
-
-# Update to use proper relative paths from IMG_DIR
 data['path'] = data['path'].apply(lambda x: os.path.join(IMG_DIR, *x.split('/')[1:]))
-
-data['label'] = data.path.apply(lambda x: 'benign' if 'benign' in x.lower() else 'malignant')
-data['label_int'] = data.label.apply(lambda x: class_names.index(x))
 data['filename'] = data.path.apply(lambda x: os.path.basename(x))
 
+# ✅ UPDATE the label extraction logic to handle 8 classes
+def get_label_from_filename(filename):
+    match = re.search(r'SOB_.\_([A-Z]+)\-.*', filename)
+    if match:
+        abbreviation = match.group(1)
+        return label_map.get(abbreviation, 'unknown')
+    return 'unknown'
 
-print("\n--- First few rows of dataset ---")
+data['label'] = data.filename.apply(get_label_from_filename)
+data = data[data['label'] != 'unknown'] # Remove rows with unknown labels
+data['label_int'] = data.label.apply(lambda x: class_names.index(x))
+
+
+print("\n--- First few rows of new 8-class dataset ---")
 print(data.head(3))
 
-# --- Visualize dataset distribution ---
-sns.displot(data=data, x='label')
-print('\nDataset Counts:')
-print('Benign    : ', data[data.label == 'benign'].label.count())
-print('Malignant : ', data[data.label == 'malignant'].label.count())
-
 # --- Split dataset into train/valid/test ---
-# take 300 samples per class for testing
-test_df = data.groupby('label').sample(n=300, random_state=42)
-train_df = data.drop(test_df.index).reset_index(drop=True)
-test_df = test_df.reset_index(drop=True)
+# ✅ UPDATE the data split to a 70/15/15 ratio
+# 70% for training, 30% for temp
+train_df, temp_df = train_test_split(data, test_size=0.30, random_state=42, stratify=data['label'])
+# Split the 30% temp into two 15% halves for validation and testing
+valid_df, test_df = train_test_split(temp_df, test_size=0.50, random_state=42, stratify=temp_df['label'])
 
-# split remaining into training + validation (80/20)
-valid_df = train_df.sample(frac=0.2, random_state=42)
-train_df = train_df.drop(valid_df.index).reset_index(drop=True)
-valid_df = valid_df.reset_index(drop=True)
 
-# mark set type
-test_df['set'] = 'test'
-train_df['set'] = 'train'
-valid_df['set'] = 'valid'
-
-# combine for visualization
-data_new = pd.concat([train_df, valid_df, test_df])
-sns.displot(data=data_new, x='label', col='set')
-
-print("\nTraining set counts:")
+print("\n--- Data Split Counts ---")
+print(f"Training set:   {len(train_df)} samples")
+print(f"Validation set: {len(valid_df)} samples")
+print(f"Test set:       {len(test_df)} samples")
+print("\nTraining set counts (Before Upsampling):")
 print(train_df.label.value_counts())
-print("\nValidation set counts:")
-print(valid_df.label.value_counts())
-print("\nTest set counts:")
-print(test_df.label.value_counts())
+
 
 # --- Up-sampling training dataset to balance classes ---
-max_count = np.max(train_df.label.value_counts())
+max_count = train_df.label.value_counts().max()
+print(f"\nBalancing all training classes to {max_count} samples...")
+train_df = train_df.groupby('label', group_keys=False).apply(lambda x: x.sample(n=max_count, replace=True, random_state=42))
 
-# resample minority class to match majority
-train_df = train_df.groupby('label').sample(n=max_count, replace=True, random_state=42)
-train_df = train_df.reset_index(drop=True)
-
-print("\nBalanced training set counts:")
+print("\nBalanced training set counts (After Upsampling):")
 print(train_df.label.value_counts())
-
-sns.displot(data=train_df, x='label')
-
-# --- Exports ---
-img_dir = IMG_DIR
