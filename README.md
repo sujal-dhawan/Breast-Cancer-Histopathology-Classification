@@ -1,83 +1,248 @@
 # Automated Histopathology Image Classification for Breast Cancer Detection
 
-This project provides a deep learning pipeline for classifying breast cancer histopathology images as either benign or malignant. [cite_start]Utilizing transfer learning with a pre-trained ResNet50 model, the system achieves **99.44% accuracy** on the BreaKHis dataset[cite: 78]. [cite_start]A key feature of this project is the integration of Grad-CAM[cite: 21], a visualization technique that makes the model's decisions interpretable by highlighting the image regions most influential to its prediction.
+This project presents a deep learning pipeline for breast cancer histopathology image classification using the **BreaKHis** dataset. The work covers both:
 
-[cite_start]This project was developed as a minor project for the B.Tech (CSE) curriculum, demonstrating a complete workflow from data processing to model evaluation and interpretation[cite: 5, 6].
+- **Binary classification** of histopathology images into **benign** and **malignant**
+- **Multi-class classification** into **8 breast tumor subtypes**
 
-## Key Features
-- **High Performance:** Achieved **99.44% accuracy** on the held-out test set.
-- **Deep Learning Model:** Built on a **ResNet50** architecture using TensorFlow and Keras for transfer learning.
-- [cite_start]**Robust Data Pipeline:** Features a comprehensive data processing workflow that handles class imbalance via upsampling and uses data augmentation (rotations, flips, crops) [cite: 31] to improve model generalization.
-- [cite_start]**Model Interpretability:** Integrates **Grad-CAM** visualizations to produce heatmaps that explain the model's predictions, a crucial step for building trust in clinical AI tools[cite: 21, 22].
+The project uses **transfer learning** with **ResNet50** and **EfficientNet-based architectures** to classify breast cancer tissue images and compare performance across binary and subtype-level classification tasks.
 
-## Results
-The model was trained successfully on a balanced dataset and achieved an excellent final accuracy of **99.33%** on the unseen test set.
+## Project Overview
 
-### Quantitative Results
-The classification report provides a detailed breakdown of the model's high performance across both classes, and the confusion matrix shows only 4 errors were made on 600 test images.
+Breast cancer diagnosis through histopathological image analysis is a critical but challenging task. Manual interpretation can be time-consuming and may vary across observers. This project explores how deep learning can support automated analysis of breast cancer histopathology images by building a complete pipeline for:
 
-| Classification Report | Confusion Matrix |
-| :---: | :---: |
-| ![Classification Report](outputs/plots/classification_report.png) | ![Confusion Matrix](outputs/plots/confusion_matrix.png) |
+- data preparation
+- class balancing
+- image augmentation
+- model training
+- model evaluation
+- result visualization
 
-### Performance Visualizations
-The training history shows a stable and consistent learning curve, with validation accuracy steadily increasing and loss decreasing over 12 epochs.
+The system was developed as part of a B.Tech minor project focused on applying deep learning in medical image analysis.
 
-![Training History](outputs/plots/training_history.png)
+## Dataset
 
-### Prediction Examples
-Below is a sample of the model's correct predictions on the test set, followed by a visualization of all four images it classified incorrectly.
+The project uses the **BreaKHis** dataset, a public breast cancer histopathological image dataset containing images at multiple magnification levels: **40×, 100×, 200×, and 400×**.
 
-| Sample of Correct Predictions | All Incorrect Predictions |
-| :---: | :---: |
-| ![Sample Predictions](outputs/plots/sample_predictions.png) | ![Wrong Predictions](outputs/plots/wrong_predictions.png) |
+The dataset includes:
 
-### Data Preparation Overview
-The initial dataset was imbalanced. A robust data pipeline was engineered to create a perfectly balanced training set through upsampling.
+### Binary classes
+- benign
+- malignant
 
-| Original Imbalanced Dataset | Final Balanced Training Set |
-| :---: | :---: |
-| ![Dataset Distribution](outputs/plots/dataset_distribution.png) | ![Balanced Training Set](outputs/plots/balanced_training_set.png) |
+### Eight subtypes
+**Benign**
+- adenosis
+- fibroadenoma
+- phyllodes_tumor
+- tubular_adenoma
 
-### Grad-CAM Visualization
-The Grad-CAM heatmaps highlight the regions the model focused on. For the correctly classified malignant image, the model correctly focuses on the dense, abnormal cell nuclei, ignoring the surrounding tissue.
+**Malignant**
+- ductal_carcinoma
+- lobular_carcinoma
+- mucinous_carcinoma
+- papillary_carcinoma
 
-![Grad-CAM Visualization](outputs/plots/grad_cam_visualization.png)
+A patient-level split was used to reduce the risk of data leakage during training and evaluation. 
 
-## Setup & Usage
+## Models Used
 
-### **Prerequisites**
-- Python 3.8+
-- [cite_start]The BreaKHis dataset [cite: 78]
+This project evaluates transfer learning using:
 
-### **Installation**
-1.  Clone the repository:
-    ```bash
-    git clone [https://github.com/your-username/Breast-Cancer-Histopathology-Classification.git](https://github.com/your-username/Breast-Cancer-Histopathology-Classification.git)
-    cd Breast-Cancer-Histopathology-Classification
-    ```
-2.  Create and activate a virtual environment:
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-    ```
-3.  Install the required dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-4.  [cite_start]**Data Setup:** Download the **BreaKHis dataset** [cite: 78] and place the `BreaKHis_v1` folder inside the `data/` directory.
+- **ResNet50**
+- **EfficientNet-based model** for 8-class classification
 
-### **Usage**
-1.  **Train the model** (this will take several hours):
-    ```bash
-    python src/train.py
-    ```
-2.  **Evaluate the model** and generate all reports and plots:
-    ```bash
-    python src/evaluate.py
-    ```
-3.  **Generate Grad-CAM** visualizations:
-    ```bash
-    python src/gradcam.py
-    ```
+Both models use pretrained ImageNet weights and are adapted for breast cancer histopathology image classification.
 
+## Preprocessing and Training Pipeline
+
+The project includes a structured preprocessing pipeline designed for medical image classification:
+
+- images resized to **224 × 224**
+- model-specific preprocessing
+- data augmentation
+- class balancing using upsampling
+- training / validation / test split
+- performance tracking using accuracy, loss, confusion matrix, and classification report
+
+Data augmentation helps improve generalization, while class balancing reduces bias toward majority classes. 
+
+## Results Summary
+
+### 1. Binary Classification using ResNet50
+The binary classification model achieved strong performance in distinguishing **benign** and **malignant** tissue images.
+
+- **Test Accuracy:** **99.33%**
+- **Precision / Recall / F1-score:** **0.99** for both classes
+
+### 2. 8-Class Classification using ResNet50
+The ResNet50 multi-class model showed strong performance across most subtypes.
+
+- **Overall Accuracy:** **98%**
+- Strong precision, recall, and F1-score across most classes
+- Slightly lower performance for some visually similar subtypes such as **lobular carcinoma**
+
+### 3. 8-Class Classification using EfficientNet
+The EfficientNet-based model achieved competitive performance with a more parameter-efficient architecture.
+
+- **Overall Accuracy:** **97%**
+- Stable learning behavior
+- Competitive subtype classification performance with fewer parameters
+
+These results are consistent with the project report and presentation material. 
+
+## Output Structure
+
+The repository includes organized output folders for clear presentation of results:
+
+```text
+outputs/
+├── binary_resnet/
+├── dataset_analysis/
+├── multiclass_resnet/
+└── multiclass_efficientnet/
+```
+
+## Dataset Analysis Outputs
+
+### Dataset Distribution
+![Dataset Distribution](outputs/dataset_analysis/dataset_distribution.png)
+
+### Train / Validation / Test Split Distribution
+![Data Split Distribution](outputs/dataset_analysis/data_split_distribution.png)
+
+### Balanced Training Set
+![Balanced Training Set](outputs/dataset_analysis/balanced_training_set.png)
+
+## Binary Classification Results (ResNet50)
+
+### Classification Report
+![Binary Classification Report](outputs/binary_resnet/classification_report.png)
+
+### Confusion Matrix
+![Binary Confusion Matrix](outputs/binary_resnet/confusion_matrix.png)
+
+### Training History
+![Binary Training History](outputs/binary_resnet/training_history.png)
+
+### Sample Predictions
+![Binary Sample Predictions](outputs/binary_resnet/sample_predictions.png)
+
+### Wrong Predictions
+![Binary Wrong Predictions](outputs/binary_resnet/wrong_predictions.png)
+
+## 8-Class Classification Results (ResNet50)
+
+### Classification Report
+![ResNet50 Multiclass Classification Report](outputs/multiclass_resnet/classification_report_resnet_multiclass.png)
+
+### Confusion Matrix
+![ResNet50 Multiclass Confusion Matrix](outputs/multiclass_resnet/confusion_matrix.png)
+
+### Training History
+![ResNet50 Multiclass Training History](outputs/multiclass_resnet/training_history_resnet.png)
+
+## 8-Class Classification Results (EfficientNet)
+
+### Classification Report
+![EfficientNet Multiclass Classification Report](outputs/multiclass_efficientnet/classification_report_effnet_multiclass.png)
+
+### Confusion Matrix
+![EfficientNet Multiclass Confusion Matrix](outputs/multiclass_efficientnet/confusion_matrix_effnet_multiclass.png)
+
+### Training History
+![EfficientNet Multiclass Training History](outputs/multiclass_efficientnet/training_history_efficientnet.png)
+
+## Key Highlights
+
+- unified pipeline for binary and multi-class breast cancer histopathology classification
+- transfer learning with ResNet50 and EfficientNet-based models
+- strong binary classification accuracy of 99.33%
+- strong 8-class subtype classification performance
+- clear output visualizations for interview and presentation use
+
+## Tech Stack
+
+- Python
+- TensorFlow / Keras
+- NumPy
+- Pandas
+- Matplotlib
+- Seaborn
+- scikit-learn
+
+## Project Structure
+
+```text
+MinorProj/
+├── data/
+├── outputs/
+│   ├── binary_resnet/
+│   ├── dataset_analysis/
+│   ├── multiclass_resnet/
+│   └── multiclass_efficientnet/
+├── src/
+│   ├── dataset.py
+│   ├── debug_pipeline.py
+│   ├── evaluate.py
+│   ├── helpers.py
+│   └── train.py
+├── README.md
+├── requirements.txt
+└── .gitignore
+```
+
+## Setup
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/sujal-dhawan/Breast-Cancer-Histopathology-Classification.git
+cd Breast-Cancer-Histopathology-Classification
+```
+### 2. Create and activate virtual environment
+```bash
+python -m venv .venv
+```
+On Windows:
+```bash
+.venv\Scripts\activate
+```
+
+### 3. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Dataset setup
+
+Download the BreaKHis dataset and place the dataset folder inside the data/ directory.
+
+## Usage
+
+### Train the model
+```bash
+python src/train.py
+```
+
+### Evaluate the model and generate outputs
+```bash
+python src/evaluate.py
+```
+
+## Notes
+- Model weight files such as .h5 are not included in the repository to keep the project lightweight and clean.
+- The repository focuses on code, outputs, and visual results for clear presentation.
+- Binary classification outputs and 8-class classification outputs are both included for comparison.
+
+
+## Future Work
+- improve interpretability using Grad-CAM or related visualization methods
+- test on additional datasets for better generalization
+- deploy through a simple GUI or web interface
+- optimize for resource-constrained environments
+
+
+### Author
+
+### Sujal Dhawan
+B.Tech CSE, Amity University
